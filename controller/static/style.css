@@ -105,6 +105,28 @@ h2 { font-size: 15px; margin: 0; letter-spacing: .2px; }
 .run-ok { color: var(--ok); } .run-bad { color: var(--bad); }
 .empty { color: var(--ink3); font-size: 13px; padding: 18px; text-align: center; border: 1px dashed var(--line);
   border-radius: var(--r2); }
+.empty.onboard { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px; }
+.empty.onboard b { color: var(--ink); font-size: 15px; }
+.empty.onboard span { max-width: 48ch; }
+.ctl-note { font-size: 12px; color: var(--ink3); }
+
+/* kebab menu */
+button.icon { padding: 5px 9px; font-size: 15px; line-height: 1; color: var(--ink2); }
+.menu { position: absolute; z-index: 100; min-width: 170px; background: var(--raise);
+  border: 1px solid var(--line2); border-radius: 10px; padding: 5px; box-shadow: 0 16px 40px -14px rgba(0,0,0,.8); }
+.menu-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 8px 10px;
+  border-radius: 7px; color: var(--ink); font-size: 13px; }
+.menu-item:hover { background: var(--panel2); }
+.menu-item.danger { color: var(--bad); }
+.menu-item.danger:hover { background: rgba(255,92,108,.1); }
+
+/* dialog advanced + help */
+details.adv { border-top: 1px solid var(--line); margin-top: 2px; padding-top: 10px; display: flex; flex-direction: column; gap: 13px; }
+details.adv summary { cursor: pointer; color: var(--ink2); font-size: 13px; list-style: none; user-select: none; }
+details.adv summary::before { content: "▸ "; color: var(--ink3); }
+details.adv[open] summary::before { content: "▾ "; }
+details.adv summary::-webkit-details-marker { display: none; }
+.fhelp { color: var(--ink3); font-size: 11.5px; }
 
 /* controls */
 button { font: inherit; cursor: pointer; border-radius: 9px; border: 1px solid var(--line);
