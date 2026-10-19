@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>trafmix</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%235b8cff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glow"></div>
+  <header>
+    <div class="brand"><span class="dot"></span> trafmix <span class="tag">traffic lab</span></div>
+    <div class="controls">
+      <span id="deps" class="deps"></span>
+      <label class="capwrap">Лимит
+        <input id="cap" type="number" min="1" step="1000"><small>кбит/с</small>
+      </label>
+      <button id="pause" class="ghost"></button>
+    </div>
+  </header>
+
+  <main>
+    <div id="stats" class="statbar"></div>
+
+    <section>
+      <div class="sec-head">
+        <div><h2>Сервера</h2>
+          <p class="hint">Малинка шлёт разнотипный трафик и отдельно проверяет, живы ли они. Контрольный — только проверка, без трафика, для сравнения.</p></div>
+        <button id="add-target" class="accent">+ сервер</button>
+      </div>
+      <div id="targets" class="cards"></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <div><h2>Трафик</h2>
+          <p class="hint">Поток с лимитом скорости по расписанию: UDP-файл, TCP, HTTP-загрузка или «микс». Одновременно идёт один поток.</p></div>
+      </div>
+      <div id="jobs" class="rows"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><div><h2>Последние прогоны</h2></div></div>
+      <div id="runs" class="rows"></div>
+    </section>
+  </main>
+
+  <dialog id="dlg"><form id="dlg-form" method="dialog"></form></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

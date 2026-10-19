@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# trafmix — один скрипт на всё.
+#   ./trafmix up          поднять панель (малинка/Ubuntu)            → http://<ip>:8744
+#   ./trafmix node        поставить ноду на сервер (sudo)           iperf3 + http-источник
+#   ./trafmix service     панель как systemd-сервис (sudo)
+#   ./trafmix stop        остановить локальную панель
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PORT="${TRAFMIX_PORT:-8744}"
+cmd="${1:-up}"; shift || true
+
+have() { command -v "$1" >/dev/null 2>&1; }
+ensure() { # ensure <pkg> — best effort, не мешаем если не вышло
+  have "$1" && return 0
+  echo "· ставлю $1…"
+  if have apt-get; then sudo apt-get update -qq && sudo apt-get install -y -qq "$1"
+  elif have dnf; then sudo dnf install -y "$1"
+  elif have brew; then brew install "$1"
+  else echo "  поставь $1 сам"; return 1; fi
+}
+
+case "$cmd" in
+  up)
+    have python3 || { echo "нужен python3"; exit 1; }
+    ensure iperf3 || true
+    have curl || ensure curl || true
+    echo "→ панель на http://0.0.0.0:${PORT}  (Ctrl+C — стоп)"
+    cd "$HERE/controller"; exec env TRAFMIX_PORT="$PORT" python3 trafmix.py ;;
+
+  node)
+    [ "$(id -u)" = 0 ] || exec sudo -E "$0" node "$@"
+    IPERF_PORT="${1:-5201}"; HTTP_PORT="${2:-8745}"; HTTP_CAP_MB="${3:-1024}"
+    ensure iperf3
+    mkdir -p /opt/trafmix-node
+    install -m 0755 "$HERE/agent/httpfile.py" /opt/trafmix-node/httpfile.py
+    cat > /etc/systemd/system/trafmix-iperf.service <<EOF
+[Unit]
+Description=trafmix node: iperf3
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/usr/bin/iperf3 -s -p ${IPERF_PORT}
+Restart=always
+RestartSec=3
+Nice=10
+CPUWeight=20
+IOWeight=20
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat > /etc/systemd/system/trafmix-httpfile.service <<EOF
+[Unit]
+Description=trafmix node: http file source
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/usr/bin/python3 /opt/trafmix-node/httpfile.py ${HTTP_PORT} ${HTTP_CAP_MB}
+Restart=always
+RestartSec=3
+Nice=10
+CPUWeight=20
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable --now trafmix-iperf trafmix-httpfile
+    IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    echo
+    echo "✓ нода поднята."
+    echo "  в панели: + сервер → адрес ${IP:-<IP>}, порт ${IPERF_PORT}, URL http://${IP:-<IP>}:${HTTP_PORT}/file"
+    echo "  открой порты только для IP малинки:"
+    echo "    ufw allow from <IP_МАЛИНКИ> to any port ${IPERF_PORT}"
+    echo "    ufw allow from <IP_МАЛИНКИ> to any port ${HTTP_PORT} proto tcp" ;;
+
+  service)
+    [ "$(id -u)" = 0 ] || exec sudo -E "$0" service "$@"
+    ensure iperf3 || true
+    RUNUSER="${SUDO_USER:-root}"
+    cat > /etc/systemd/system/trafmix.service <<EOF
+[Unit]
+Description=trafmix controller (panel)
+After=network-online.target
+Wants=network-online.target
+[Service]
+User=${RUNUSER}
+WorkingDirectory=${HERE}/controller
+Environment=TRAFMIX_PORT=${PORT}
+ExecStart=/usr/bin/python3 ${HERE}/controller/trafmix.py
+Restart=always
+RestartSec=3
+Nice=5
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable --now trafmix
+    echo "✓ панель как сервис на :${PORT}. Повесь её за свой VPN/прокси — своей авторизации нет." ;;
+
+  stop)
+    pkill -f "controller/trafmix.py" 2>/dev/null && echo "остановлено" || echo "не запущено" ;;
+
+  *)
+    sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac
